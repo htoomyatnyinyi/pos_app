@@ -1,56 +1,132 @@
-import { View, Text, TouchableOpacity, ScrollView } from "react-native";
+import {
+  MOCK_FINANCE_HISTORY,
+  MOCK_NOTIFICATIONS,
+  MOCK_PRODUCTS,
+} from "@/services/mock/mockData";
+import { router } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import {
+  SafeAreaView,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
-export default function POSScreen() {
+export default function HomeScreen() {
+  const totalRevenue = MOCK_FINANCE_HISTORY.filter(
+    (record) => record.type === "income",
+  ).reduce((sum, record) => sum + record.amount, 0);
+
+  const totalExpenses = MOCK_FINANCE_HISTORY.filter(
+    (record) => record.type === "expense",
+  ).reduce((sum, record) => sum + Math.abs(record.amount), 0);
+
+  const totalOrders = MOCK_NOTIFICATIONS.filter(
+    (item) => item.type === "order",
+  ).length;
+
+  const lowStockCount = MOCK_PRODUCTS.filter(
+    (product) => product.stock < 5,
+  ).length;
+
+  const topProducts = MOCK_PRODUCTS.slice()
+    .sort((a, b) => b.sold - a.sold)
+    .slice(0, 4);
+
   return (
-    <View className="flex-1 flex-row bg-slate-50">
-      {/* Left Pane: Product Grid */}
-      <View className="flex-[3] p-6">
-        <Text className="text-3xl font-bold text-slate-800 mb-6">Menu</Text>
-        <ScrollView>
-          <View className="flex-row flex-wrap gap-4">
-            {/* Sample Product Card */}
-            <TouchableOpacity className="bg-white p-4 rounded-2xl w-40 items-center border border-slate-200">
-              <View className="w-24 h-24 bg-slate-100 rounded-full mb-3" />
-              <Text className="font-bold text-lg text-slate-700">Espresso</Text>
-              <Text className="text-slate-500 font-medium mt-1">$3.00</Text>
-            </TouchableOpacity>
+    <SafeAreaView className="flex-1 bg-slate-50">
+      <StatusBar style="dark" />
 
-            {/* Sample Product Card */}
-            <TouchableOpacity className="bg-white p-4 rounded-2xl w-40 items-center border border-slate-200">
-              <View className="w-24 h-24 bg-slate-100 rounded-full mb-3" />
-              <Text className="font-bold text-lg text-slate-700">Latte</Text>
-              <Text className="text-slate-500 font-medium mt-1">$4.50</Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </View>
-
-      {/* Right Pane: Checkout / Cart */}
-      <View className="flex-[1.2] bg-white border-l border-slate-200 p-6 flex-col">
-        <Text className="text-2xl font-bold text-slate-800 mb-6">
-          Current Order
+      <View className="px-6 py-5 bg-white border-b border-slate-200">
+        <Text className="text-3xl font-bold text-slate-900">Mini Shop POS</Text>
+        <Text className="text-slate-500 mt-2">
+          A simple point of sale dashboard with stock, product CRUD, history,
+          and finance.
         </Text>
-
-        {/* Cart Items Area */}
-        <View className="flex-1">
-          <View className="flex-row justify-between mb-4">
-            <Text className="text-slate-700 font-medium">1x Espresso</Text>
-            <Text className="text-slate-700 font-bold">$3.00</Text>
-          </View>
-        </View>
-
-        {/* Totals & Payment */}
-        <View className="border-t border-slate-200 pt-4 mt-auto">
-          <View className="flex-row justify-between mb-4">
-            <Text className="text-slate-500 text-lg">Total</Text>
-            <Text className="text-slate-800 text-2xl font-bold">$3.00</Text>
-          </View>
-          <TouchableOpacity className="bg-blue-600 p-4 rounded-xl items-center">
-            <Text className="text-white font-bold text-xl">Charge</Text>
-          </TouchableOpacity>
-        </View>
       </View>
-    </View>
+
+      <ScrollView className="px-6 pt-4 pb-24">
+        <View className="grid-cols-2 gap-4">
+          <View className="mb-4 rounded-3xl bg-white p-5 shadow-sm border border-slate-200">
+            <Text className="text-slate-500">Revenue</Text>
+            <Text className="mt-4 text-3xl font-bold text-slate-900">
+              ${totalRevenue.toFixed(2)}
+            </Text>
+          </View>
+          <View className="mb-4 rounded-3xl bg-white p-5 shadow-sm border border-slate-200">
+            <Text className="text-slate-500">Expenses</Text>
+            <Text className="mt-4 text-3xl font-bold text-slate-900">
+              ${totalExpenses.toFixed(2)}
+            </Text>
+          </View>
+          <View className="mb-4 rounded-3xl bg-white p-5 shadow-sm border border-slate-200">
+            <Text className="text-slate-500">Orders</Text>
+            <Text className="mt-4 text-3xl font-bold text-slate-900">
+              {totalOrders}
+            </Text>
+          </View>
+          <View className="mb-4 rounded-3xl bg-white p-5 shadow-sm border border-slate-200">
+            <Text className="text-slate-500">Low stock</Text>
+            <Text className="mt-4 text-3xl font-bold text-slate-900">
+              {lowStockCount}
+            </Text>
+          </View>
+        </View>
+
+        <View className="mt-4 rounded-3xl bg-white p-5 shadow-sm border border-slate-200">
+          <Text className="text-xl font-bold text-slate-900">
+            Quick actions
+          </Text>
+          <View className="mt-4 flex-row flex-wrap gap-3">
+            <TouchableOpacity
+              onPress={() => router.push("/stock")}
+              className="rounded-2xl bg-blue-600 px-4 py-3">
+              <Text className="text-white font-semibold">View stock</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => router.push("/add")}
+              className="rounded-2xl bg-slate-900 px-4 py-3">
+              <Text className="text-white font-semibold">Add product</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => router.push("/notification")}
+              className="rounded-2xl bg-slate-100 px-4 py-3">
+              <Text className="font-semibold text-slate-900">
+                Order history
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => router.push("/finance")}
+              className="rounded-2xl bg-slate-100 px-4 py-3">
+              <Text className="font-semibold text-slate-900">Finance</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View className="mt-4 rounded-3xl bg-white p-5 shadow-sm border border-slate-200">
+          <Text className="text-xl font-bold text-slate-900">Top selling</Text>
+          <View className="mt-4 space-y-4">
+            {topProducts.map((product) => (
+              <View
+                key={product.id}
+                className="rounded-3xl bg-slate-50 p-4 border border-slate-200">
+                <Text className="font-semibold text-slate-900">
+                  {product.name}
+                </Text>
+                <Text className="text-slate-500 mt-1">{product.category}</Text>
+                <View className="mt-3 flex-row justify-between items-center">
+                  <Text className="text-slate-600">Sold {product.sold}</Text>
+                  <Text className="font-bold text-slate-900">
+                    ${product.price.toFixed(2)}
+                  </Text>
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 // import { Image } from 'expo-image';

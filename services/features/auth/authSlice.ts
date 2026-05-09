@@ -7,7 +7,12 @@ interface AuthState {
 }
 
 const initialState: AuthState = {
-  user: null,
+  user: {
+    id: "test-user-001",
+    name: "Test Admin",
+    email: "admin@test.com",
+    token: "mock-token-for-testing",
+  },
 };
 
 const authSlice = createSlice({
