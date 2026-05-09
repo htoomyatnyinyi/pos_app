@@ -1,7 +1,7 @@
 export interface Product {
-  id: number;
+  id: string; // Changed from number to string (cuid)
   name: string;
   price: number;
   stock: number;
-  image?: string;
+  imageUrl?: string; // Changed from image to imageUrl to match schema
 }

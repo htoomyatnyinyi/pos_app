@@ -1,5 +1,5 @@
 export interface User {
-  id: number;
+  id: string; // Changed from number to string (cuid)
   name: string;
   email: string;
   token: string;
