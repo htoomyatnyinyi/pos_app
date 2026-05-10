@@ -1,6 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-let POS_URL = process.env.EXPO_PUBLIC_POS_URL || "http://localhost:3000";
+let POS_URL = process.env.EXPO_PUBLIC_POS_URL || "http://192.168.1.194:6060";
 if (!POS_URL.endsWith("/api")) {
   POS_URL = `${POS_URL}/api`;
 }
@@ -18,7 +18,7 @@ export const posApi = createApi({
     },
   }),
 
-  tagTypes: ["Auth", "Products", "Orders", "Customers"],
+  tagTypes: ["Auth", "Products", "Orders", "Customers", "Staff", "Categories"],
 
   endpoints: () => ({}),
 });

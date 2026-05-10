@@ -17,11 +17,21 @@ export interface OrderItem {
 }
 
 export interface CreateOrderPayload {
+  subTotal: number;
+  taxAmount?: number;
+  discountAmount?: number;
+  grandTotal: number;
+  paymentMethod: "CASH" | "KBZ_PAY" | "CB_PAY" | "WAVE_PAY" | "CARD" | "MIXED_PAYMENT";
+  paidAmount: number;
+  changeAmount: number;
+  paymentStatus?: string;
+  userId: string;
+  customerId?: string;
   items: {
-    id: string;
-    qty: number;
-    price: number;
+    productId: string;
+    quantity: number;
+    unitPrice: number;
+    discountAmount?: number;
+    subTotal: number;
   }[];
-  total: number;
-  userId?: string; // Added userId requirement from new schema
 }

@@ -25,6 +25,23 @@ export const productApi = posApi.injectEndpoints({
 
       invalidatesTags: ["Products"],
     }),
+
+    updateProduct: builder.mutation<Product, { id: string; data: Partial<Product> }>({
+      query: ({ id, data }) => ({
+        url: `/products/${id}`,
+        method: "PUT",
+        body: data,
+      }),
+      invalidatesTags: ["Products"],
+    }),
+
+    deleteProduct: builder.mutation<void, string>({
+      query: (id) => ({
+        url: `/products/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Products"],
+    }),
   }),
 });
 
@@ -32,4 +49,6 @@ export const {
   useGetProductsQuery,
   useGetProductByIdQuery,
   useCreateProductMutation,
+  useUpdateProductMutation,
+  useDeleteProductMutation,
 } = productApi;
