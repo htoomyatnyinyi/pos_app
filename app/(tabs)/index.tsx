@@ -1,227 +1,353 @@
-import React, { useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
-  View,
+  ActivityIndicator,
+  SafeAreaView,
+  ScrollView,
   Text,
   TouchableOpacity,
-  ScrollView,
-  SafeAreaView,
-  StatusBar,
-  Modal,
-  ActivityIndicator,
-  Alert,
+  View,
+  Image,
+  TextInput,
 } from "react-native";
-import { useGetProductsQuery } from "@/services/features/products/productApi";
-import { useCreateOrderMutation } from "@/services/features/order/orderApi";
-import { useAppSelector } from "@/hooks/redux-hooks/useAppSelector";
+import { FaCartPlus, FaBars, FaMinus } from "react-icons/fa";
+import { router } from "expo-router";
+import { mockProdcuts } from "@/services/features/products/mockProducts";
 
-export default function CheckoutScreen() {
-  const { data: products, isLoading, error } = useGetProductsQuery();
-  const [createOrder, { isLoading: isCreating }] = useCreateOrderMutation();
-  const user = useAppSelector((state) => state.auth.user);
+const StockItems = () => {
+  const [isLoading] = useState(false);
+  const [error] = useState(false);
+  const [cartItems, setCartItems] = useState([]);
 
-  const [cart, setCart] = useState<
-    { id: string; name: string; price: number; quantity: number }[]
-  >([]);
-  const [isCartVisible, setIsCartVisible] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [showSidebar, setShowSidebar] = useState(true);
 
-  const addToCart = (product: any) => {
-    setCart((prev) => {
-      const existing = prev.find((item) => item.id === product.id);
+  const [products, setProducts] = useState(mockProdcuts);
+  const [cartCount, setCartCount] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // unique categories
+  const categories = useMemo(() => {
+    const unique = [
+      "All",
+      ...new Set(mockProdcuts.map((item) => item.categories)),
+    ];
+    return unique;
+  }, []);
+
+  // effect to set selectedCategory based on search
+  useEffect(() => {
+    if (searchQuery.length > 0) {
+      const matchingProducts = products.filter((product) => {
+        const query = searchQuery.toLowerCase();
+        return (
+          product.categories.toLowerCase().includes(query) ||
+          product.sellingPrice.toString().includes(query) ||
+          product.originalPrice.toString().includes(query) ||
+          product.quantities.toString().includes(query)
+        );
+      });
+      const uniqueCategories = [
+        ...new Set(matchingProducts.map((p) => p.categories)),
+      ];
+      if (uniqueCategories.length === 1) {
+        setSelectedCategory(uniqueCategories[0]);
+      } else {
+        setSelectedCategory("All");
+      }
+    } else {
+      setSelectedCategory("All");
+    }
+  }, [searchQuery, products]);
+
+  // filter products
+  const filteredProducts =
+    selectedCategory === "All"
+      ? products
+      : products.filter((product) => product.categories === selectedCategory);
+
+  const displayedProducts = filteredProducts.filter((product) => {
+    if (searchQuery.length === 0) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      product.categories.toLowerCase().includes(query) ||
+      product.sellingPrice.toString().includes(query) ||
+      product.originalPrice.toString().includes(query) ||
+      product.quantities.toString().includes(query)
+    );
+  });
+
+  // add to cart
+  const handleAddToCart = (id: any) => {
+    const selectedProduct = products.find((p) => p.id === id);
+
+    if (!selectedProduct || selectedProduct.quantities <= 0) return;
+
+    // 1. reduce stock
+    setProducts((prev) =>
+      prev.map((product) =>
+        product.id === id
+          ? {
+              ...product,
+              quantities: product.quantities - 1,
+            }
+          : product,
+      ),
+    );
+
+    // 2. update cart items
+    setCartItems((prev: any) => {
+      const existing = prev.find((item: any) => item.id === id);
+
       if (existing) {
-        return prev.map((item) =>
-          item.id === product.id
-            ? { ...item, quantity: item.quantity + 1 }
+        return prev.map((item: any) =>
+          item.id === id
+            ? {
+                ...item,
+                qty: item.qty + 1,
+              }
             : item,
         );
       }
-      return [...prev, { id: product.id, name: product.name, price: product.sellingPrice, quantity: 1 }];
+
+      return [
+        ...prev,
+        {
+          ...selectedProduct,
+          qty: 1,
+        },
+      ];
     });
+
+    // 3. update cart badge
+    setCartCount((prev) => prev + 1);
   };
 
-  const totalAmount = cart.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0,
-  );
-  const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+  // remove from cart
+  const handleRemoveFromCart = (id: any) => {
+    const existing = cartItems.find((item: any) => item.id === id);
 
-  const handleCharge = async () => {
-    if (cart.length === 0) return;
-    if (!user) {
-      Alert.alert("Error", "Please login to process orders.");
-      return;
-    }
+    if (!existing || existing.qty <= 0) return;
 
-    try {
-      await createOrder({
-        subTotal: totalAmount,
-        grandTotal: totalAmount,
-        paymentMethod: "CASH",
-        paidAmount: totalAmount,
-        changeAmount: 0,
-        userId: user.id,
-        items: cart.map((item) => ({
-          productId: item.id,
-          quantity: item.quantity,
-          unitPrice: item.price,
-          subTotal: item.price * item.quantity,
-        })),
-      }).unwrap();
+    // 1. increase stock
+    setProducts((prev) =>
+      prev.map((product) =>
+        product.id === id
+          ? {
+              ...product,
+              quantities: product.quantities + 1,
+            }
+          : product,
+      ),
+    );
 
-      Alert.alert("Success", "Order completed successfully!");
-      setCart([]);
-      setIsCartVisible(false);
-    } catch (err: any) {
-      Alert.alert("Error", err?.data?.message || "Failed to create order");
-    }
+    // 2. update cart items
+    setCartItems((prev: any) => {
+      const updated = prev
+        .map((item: any) =>
+          item.id === id
+            ? {
+                ...item,
+                qty: item.qty - 1,
+              }
+            : item,
+        )
+        .filter((item: any) => item.qty > 0);
+
+      return updated;
+    });
+
+    // 3. update cart badge
+    setCartCount((prev) => prev - 1);
+  };
+
+  const openAdd = () => {
+    router.push({
+      pathname: "/checkout" as any,
+      params: {
+        cart: JSON.stringify(cartItems),
+      },
+    });
+  };
+  const isInCart = (id: any) => {
+    return cartItems.some((item: any) => item.id === id);
   };
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50">
-      <StatusBar barStyle="dark-content" />
-
-      {/* --- HEADER --- */}
-      <View className="px-6 py-4 bg-white border-b border-slate-200 flex-row justify-between items-center">
+      {/* HEADER */}
+      <View className="px-6 pt-10 pb-6 flex-row justify-between items-center">
         <View>
-          <Text className="text-2xl font-bold text-slate-800">
-            MidnightCorner
-          </Text>
-          <Text className="text-slate-400 text-xs uppercase tracking-widest font-semibold">
-            Point of Sale
+          <Text className="text-4xl font-black text-slate-900">Products</Text>
+          <Text className="text-slate-400 font-medium text-sm mt-1">
+            Manage your catalog
           </Text>
         </View>
-        <TouchableOpacity className="w-10 h-10 bg-slate-900 rounded-full items-center justify-center">
-          <Text className="text-white font-bold">{user?.name?.charAt(0).toUpperCase() || "U"}</Text>
-        </TouchableOpacity>
+
+        <View className="flex-row items-center gap-3">
+          {/* Sidebar Toggle */}
+          <TouchableOpacity
+            onPress={() => setShowSidebar(!showSidebar)}
+            className="bg-white border border-slate-200 p-4 rounded-2xl">
+            <FaBars color="#0f172a" />
+          </TouchableOpacity>
+
+          {/* Cart */}
+          <TouchableOpacity
+            activeOpacity={0.8}
+            onPress={openAdd}
+            className="bg-slate-900 px-5 py-4 rounded-2xl relative">
+            <FaCartPlus color="white" />
+            {cartCount > 0 && (
+              <View className="absolute -top-2 -right-2 bg-red-500 w-6 h-6 rounded-full items-center justify-center">
+                <Text className="text-white text-xs font-bold">
+                  {cartCount}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {/* --- PRODUCT GRID --- */}
+      {/* LOADING */}
       {isLoading ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#0f172a" />
         </View>
       ) : error ? (
         <View className="flex-1 items-center justify-center px-10">
-          <Text className="text-red-500 font-bold text-center">Failed to load products. Please check your backend connection.</Text>
+          <Text className="text-red-500 font-bold text-lg text-center">
+            Error loading inventory.
+          </Text>
         </View>
       ) : (
-        <ScrollView className="flex-1 px-4 pt-4">
-          <View className="flex-row flex-wrap justify-between">
-            {products?.map((product) => (
-              <TouchableOpacity
-                key={product.id}
-                onPress={() => addToCart(product)}
-                activeOpacity={0.7}
-                className="bg-white p-3 rounded-2xl w-[48%] mb-4 shadow-sm border border-slate-100"
-              >
-                <View className="w-full aspect-square bg-slate-50 rounded-xl mb-3 items-center justify-center">
-                  <Text className="text-4xl">☕</Text>
-                </View>
-                <Text
-                  className="font-bold text-slate-800 text-lg"
-                  numberOfLines={1}
-                >
-                  {product.name}
-                </Text>
-                <Text className="text-blue-600 font-black text-md mt-1">
-                  ${product.sellingPrice?.toFixed?.(2) || "0.00"}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          <View className="h-24" />
-        </ScrollView>
-      )}
+        <>
+          <View className="px-4 pt-4 pb-2">
+            <View className="bg-white border border-slate-200 rounded-2xl px-4 py-3 flex-row items-center">
+              <Text className="text-slate-400 mr-2">🔍</Text>
 
-      {/* --- BOTTOM SUMMARY BAR --- */}
-      {totalItems > 0 && (
-        <View className="absolute bottom-0 left-0 right-0 bg-white border-t border-slate-200 px-6 py-4 pb-8 flex-row justify-between items-center shadow-lg">
-          <View>
-            <Text className="text-slate-400 text-xs font-bold uppercase">
-              {totalItems} Items
-            </Text>
-            <Text className="text-2xl font-black text-slate-900">
-              ${totalAmount?.toFixed?.(2) || "0.00"}
-            </Text>
-          </View>
-          <TouchableOpacity
-            onPress={() => setIsCartVisible(true)}
-            className="bg-slate-900 px-8 py-4 rounded-2xl"
-          >
-            <Text className="text-white font-bold text-lg">View Order</Text>
-          </TouchableOpacity>
-        </View>
-      )}
+              <TextInput
+                placeholder="Search products, category, price..."
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                className="flex-1 text-slate-900"
+              />
 
-      {/* --- CART MODAL --- */}
-      <Modal
-        visible={isCartVisible}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setIsCartVisible(false)}
-      >
-        <View className="flex-1 bg-white p-6">
-          <View className="flex-row justify-between items-center mb-8">
-            <Text className="text-3xl font-black text-slate-900">
-              Current Order
-            </Text>
-            <TouchableOpacity onPress={() => setIsCartVisible(false)}>
-              <Text className="text-slate-400 font-bold text-lg">Close</Text>
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView className="flex-1">
-            {cart.map((item) => (
-              <View
-                key={item.id}
-                className="flex-row justify-between items-center mb-6 pb-6 border-b border-slate-50"
-              >
-                <View className="flex-row items-center">
-                  <View className="bg-slate-50 w-12 h-12 rounded-lg items-center justify-center mr-4">
-                    <Text className="font-bold text-slate-900">
-                      {item.quantity}x
-                    </Text>
-                  </View>
-                  <View>
-                    <Text className="text-lg font-bold text-slate-800">
-                      {item.name}
-                    </Text>
-                    <Text className="text-slate-400 font-medium">
-                      ${item.price?.toFixed?.(2) || "0.00"} each
-                    </Text>
-                  </View>
-                </View>
-                <Text className="text-lg font-black text-slate-900">
-                  ${((item.price || 0) * (item.quantity || 0))?.toFixed?.(2) || "0.00"}
-                </Text>
-              </View>
-            ))}
-          </ScrollView>
-
-          <View className="pt-6 border-t border-slate-100">
-            <View className="flex-row justify-between mb-6">
-              <Text className="text-xl text-slate-500 font-medium">
-                Total Amount
-              </Text>
-              <Text className="text-3xl font-black text-slate-900">
-                ${totalAmount?.toFixed?.(2) || "0.00"}
-              </Text>
-            </View>
-            <TouchableOpacity
-              className={`p-5 rounded-2xl items-center ${isCreating ? 'bg-slate-400' : 'bg-slate-900'}`}
-              onPress={handleCharge}
-              disabled={isCreating}
-            >
-              {isCreating ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                <Text className="text-white font-black text-xl">
-                  Confirm & Charge
-                </Text>
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery("")}>
+                  <Text className="text-slate-500 font-bold">✕</Text>
+                </TouchableOpacity>
               )}
-            </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      </Modal>
+          <View className="flex-1 flex-row">
+            {/* LEFT CATEGORY SIDEBAR */}
+            {showSidebar && (
+              <View className="w-32 bg-white border-r border-slate-200 py-4">
+                <ScrollView showsVerticalScrollIndicator={false}>
+                  {categories.map((category, i) => {
+                    const active = selectedCategory === category;
+
+                    return (
+                      <TouchableOpacity
+                        key={i}
+                        activeOpacity={0.8}
+                        onPress={() => setSelectedCategory(category)}
+                        className={`mx-3 mb-3 px-4 py-3 rounded-2xl ${
+                          active
+                            ? "bg-slate-900"
+                            : "bg-slate-100 border border-slate-200"
+                        }`}>
+                        <Text
+                          className={`font-bold text-center ${
+                            active ? "text-white" : "text-slate-700"
+                          }`}>
+                          {category}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+            )}
+
+            {/* PRODUCTS */}
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{
+                paddingHorizontal: 16,
+                paddingBottom: 120,
+                paddingTop: 10,
+              }}
+              className="flex-1">
+              <View className="flex-row flex-wrap justify-between">
+                {displayedProducts.map((product) => (
+                  <>
+                    {isInCart(product.id) && (
+                      <View className="absolute top-2 right-2 bg-green-500 px-2 py-1 rounded-full">
+                        <Text className="text-white text-xs font-bold">
+                          In Cart
+                        </Text>
+                      </View>
+                    )}
+                    <View
+                      key={product.id}
+                      className="w-[48%] rounded-3xl mb-4 p-4 border shadow-sm bg-white border-slate-200">
+                      {/* IMAGE */}
+                      <Image
+                        source={{ uri: product.img }}
+                        className="w-full h-32 rounded-2xl bg-slate-100"
+                        resizeMode="cover"
+                      />
+
+                      {/* INFO */}
+                      <View className="mt-4">
+                        <Text className="text-slate-400 text-xs font-bold uppercase">
+                          {product.categories}
+                        </Text>
+
+                        <Text className="text-lg font-black text-slate-900 mt-1">
+                          {product.sellingPrice} MMK
+                        </Text>
+
+                        <Text className="text-slate-500 text-sm line-through">
+                          {product.originalPrice} MMK
+                        </Text>
+
+                        <View className="flex-row justify-between items-center mt-3">
+                          <Text className="text-sm font-bold text-slate-700">
+                            Stock: {product.quantities}
+                          </Text>
+
+                          <View className="flex-row gap-2">
+                            {isInCart(product.id) && (
+                              <TouchableOpacity
+                                onPress={() => handleRemoveFromCart(product.id)}
+                                className="bg-red-500 w-9 h-9 rounded-full items-center justify-center">
+                                <Text className="text-white text-lg font-bold">
+                                  -
+                                </Text>
+                              </TouchableOpacity>
+                            )}
+                            <TouchableOpacity
+                              onPress={() => handleAddToCart(product.id)}
+                              className="bg-slate-900 w-9 h-9 rounded-full items-center justify-center">
+                              <Text className="text-white text-lg font-bold">
+                                +
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      </View>
+                    </View>
+                  </>
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+        </>
+      )}
     </SafeAreaView>
   );
-}
+};
+
+export default StockItems;

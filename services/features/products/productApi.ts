@@ -8,7 +8,6 @@ export const productApi = posApi.injectEndpoints({
   endpoints: (builder) => ({
     getProducts: builder.query<Product[], void>({
       query: () => "/products",
-
       providesTags: ["Products"],
     }),
 
@@ -26,7 +25,10 @@ export const productApi = posApi.injectEndpoints({
       invalidatesTags: ["Products"],
     }),
 
-    updateProduct: builder.mutation<Product, { id: string; data: Partial<Product> }>({
+    updateProduct: builder.mutation<
+      Product,
+      { id: string; data: Partial<Product> }
+    >({
       query: ({ id, data }) => ({
         url: `/products/${id}`,
         method: "PUT",
