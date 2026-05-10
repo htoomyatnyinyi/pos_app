@@ -3,11 +3,11 @@ import {
   View,
   Text,
   ScrollView,
-  SafeAreaView,
   ActivityIndicator,
   TouchableOpacity,
 } from "react-native";
 import { useGetOrdersQuery } from "@/services/features/order/orderApi";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function OrdersScreen() {
   const { data: orders, isLoading, error } = useGetOrdersQuery();
@@ -55,7 +55,7 @@ export default function OrdersScreen() {
                   </Text>
                 </View>
                 <View className="items-end">
-                  <Text className="text-slate-900 font-black text-2xl">${order.totalAmount.toFixed(2)}</Text>
+                  <Text className="text-slate-900 font-black text-2xl">${order.items.reduce((acc, item) => acc + item.quantity * Number(item?.product?.sellingPrice), 0).toFixed(2)}</Text>
                   <Text className="text-slate-400 font-bold text-xs uppercase tracking-tighter">
                     {order.items.length} {order.items.length === 1 ? 'Item' : 'Items'}
                   </Text>

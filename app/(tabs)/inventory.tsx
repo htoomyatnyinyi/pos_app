@@ -3,7 +3,6 @@ import {
   View,
   Text,
   ScrollView,
-  SafeAreaView,
   ActivityIndicator,
   TouchableOpacity,
   Modal,
@@ -20,6 +19,7 @@ import {
 } from "@/services/features/products/productApi";
 import { useGetCategoriesQuery } from "@/services/features/categories/categoryApi";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function InventoryScreen() {
   const { data: products, isLoading, error } = useGetProductsQuery();

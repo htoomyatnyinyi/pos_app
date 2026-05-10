@@ -2,7 +2,6 @@ import React from "react";
 import {
   View,
   Text,
-  SafeAreaView,
   TouchableOpacity,
   ScrollView,
 } from "react-native";
@@ -10,6 +9,7 @@ import { useAppDispatch } from "@/hooks/redux-hooks/useAppDispatch";
 import { useAppSelector } from "@/hooks/redux-hooks/useAppSelector";
 import { logout } from "@/services/features/auth/authSlice";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function SettingsScreen() {
   const dispatch = useAppDispatch();

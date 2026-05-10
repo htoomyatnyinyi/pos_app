@@ -19,6 +19,7 @@ export default function CheckoutScreen() {
   const [createOrder, { isLoading: isCreating }] = useCreateOrderMutation();
   const user = useAppSelector((state) => state.auth.user);
 
+
   const [cart, setCart] = useState<
     { id: string; name: string; price: number; quantity: number }[]
   >([]);
@@ -34,7 +35,7 @@ export default function CheckoutScreen() {
             : item,
         );
       }
-      return [...prev, { id: product.id, name: product.name, price: product.sellingPrice, quantity: 1 }];
+      return [...prev, { id: product.id, name: product.name, price: Number(product.sellingPrice), quantity: 1 }];
     });
   };
 
@@ -123,7 +124,7 @@ export default function CheckoutScreen() {
                   {product.name}
                 </Text>
                 <Text className="text-blue-600 font-black text-md mt-1">
-                  ${product.sellingPrice?.toFixed?.(2) || "0.00"}
+                  ${Number(product.sellingPrice).toFixed(2)}
                 </Text>
               </TouchableOpacity>
             ))}

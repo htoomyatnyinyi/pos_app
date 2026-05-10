@@ -13,6 +13,10 @@ export interface OrderItem {
   productName: string;
   price: number;
   quantity: number;
+  product: {
+    name: string;
+    sellingPrice: string;
+  };
   productId: string;
 }
 
