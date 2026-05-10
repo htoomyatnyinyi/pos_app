@@ -1,10 +1,23 @@
 export type ShopProduct = {
   id: string;
+
+  sku: string;
+  barcode?: string;
+
   name: string;
-  category: string;
-  price: number;
-  stock: number;
-  sold: number;
+  description?: string;
+
+  brand?: string;
+
+  costPrice: number;
+  sellingPrice: number;
+
+  stockQuantity: number;
+
+  categoryId: string;
+  supplierId?: string;
+
+  imageUrl?: string;
 };
 
 export type ShopNotification = {
@@ -26,44 +39,15 @@ export type FinanceRecord = {
 
 export const MOCK_PRODUCTS: ShopProduct[] = [
   {
-    id: "p-1001",
-    name: "Espresso Shot",
-    category: "Beverages",
-    price: 3.0,
-    stock: 18,
-    sold: 128,
-  },
-  {
-    id: "p-1002",
-    name: "Iced Latte",
-    category: "Beverages",
-    price: 4.5,
-    stock: 8,
-    sold: 96,
-  },
-  {
-    id: "p-1003",
-    name: "Croissant",
-    category: "Bakery",
-    price: 3.5,
-    stock: 4,
-    sold: 72,
-  },
-  {
-    id: "p-1004",
-    name: "Blueberry Muffin",
-    category: "Bakery",
-    price: 2.75,
-    stock: 10,
-    sold: 48,
-  },
-  {
-    id: "p-1005",
-    name: "Bottle Water",
-    category: "Retail",
-    price: 1.5,
-    stock: 24,
-    sold: 140,
+    id: "1",
+    sku: "SKU-001",
+    name: "Coca Cola",
+    description: "Soft drink",
+    costPrice: 500,
+    sellingPrice: 700,
+    stockQuantity: 20,
+    categoryId: "drink",
+    imageUrl: "https://...",
   },
 ];
 

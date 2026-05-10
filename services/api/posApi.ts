@@ -1,6 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-let POS_URL = process.env.EXPO_PUBLIC_POS_URL || "http://localhost:3000";
+let POS_URL = process.env.EXPO_PUBLIC_POS_URL || "http://localhost:6060";
 if (!POS_URL.endsWith("/api")) {
   POS_URL = `${POS_URL}/api`;
 }

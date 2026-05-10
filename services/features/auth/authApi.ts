@@ -25,13 +25,7 @@ export const authApi = posApi.injectEndpoints({
 
       invalidatesTags: ["Auth"],
     }),
-
-    me: builder.query<User, void>({
-      query: () => "/auth/me",
-
-      providesTags: ["Auth"],
-    }),
   }),
 });
 
-export const { useLoginMutation, useRegisterMutation, useMeQuery } = authApi;
+export const { useLoginMutation, useRegisterMutation } = authApi;
