@@ -28,7 +28,7 @@ const cartSlice = createSlice({
       }
     },
 
-    decreaseQty: (state, action: PayloadAction<number>) => {
+    decreaseQty: (state, action: PayloadAction<string>) => {
       const item = state.items.find((i) => i.id === action.payload);
 
       if (!item) return;
@@ -40,7 +40,7 @@ const cartSlice = createSlice({
       }
     },
 
-    removeFromCart: (state, action: PayloadAction<number>) => {
+    removeFromCart: (state, action: PayloadAction<string>) => {
       state.items = state.items.filter((item) => item.id !== action.payload);
     },
 

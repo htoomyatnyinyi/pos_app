@@ -21,7 +21,35 @@ export const orderApi = posApi.injectEndpoints({
 
       invalidatesTags: ["Orders", "Products"],
     }),
+
+    getOrderById: builder.query<Order, string>({
+      query: (id) => `/orders/${id}`,
+      providesTags: ["Orders"],
+    }),
+
+    updateOrderStatus: builder.mutation<Order, { id: string; status: string }>({
+      query: ({ id, status }) => ({
+        url: `/orders/${id}/status`,
+        method: "PATCH",
+        body: { status },
+      }),
+      invalidatesTags: ["Orders"],
+    }),
+
+    deleteOrder: builder.mutation<void, string>({
+      query: (id) => ({
+        url: `/orders/${id}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Orders"],
+    }),
   }),
 });
 
-export const { useGetOrdersQuery, useCreateOrderMutation } = orderApi;
+export const {
+  useGetOrdersQuery,
+  useCreateOrderMutation,
+  useGetOrderByIdQuery,
+  useUpdateOrderStatusMutation,
+  useDeleteOrderMutation,
+} = orderApi;
