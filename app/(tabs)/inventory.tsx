@@ -152,7 +152,7 @@ export default function InventoryScreen() {
     <SafeAreaView className="flex-1 bg-slate-50">
       <View className="px-8 pt-10 pb-6 flex-row justify-between items-end">
         <View>
-          <Text className="text-4xl font-black text-slate-900 tracking-tight">Inventory</Text>
+          <Text className="text-4xl font-black text-slate-900 tracking-tight">Products</Text>
           <Text className="text-slate-400 font-medium text-sm uppercase tracking-widest mt-1">Manage your catalog</Text>
         </View>
         <TouchableOpacity 
@@ -193,7 +193,7 @@ export default function InventoryScreen() {
                     {product.stockQuantity}
                   </Text>
                 </View>
-                <Text className="text-slate-900 font-black text-lg mt-1">${product.sellingPrice.toFixed(2)}</Text>
+                <Text className="text-slate-900 font-black text-lg mt-1">${product.sellingPrice?.toFixed?.(2) || '0.00'}</Text>
               </View>
               <View className="flex-row gap-2">
                 <TouchableOpacity 

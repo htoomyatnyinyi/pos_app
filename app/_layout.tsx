@@ -3,33 +3,35 @@ import {
   DefaultTheme,
   ThemeProvider,
 } from "@react-navigation/native";
-import { Stack, Redirect, useSegments } from "expo-router";
+import { Stack, useRouter, useSegments, useRootNavigationState } from "expo-router";
+import { useEffect } from "react";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 import { Provider } from "react-redux";
-import { store } from "@/services/store/store";
+import { PersistGate } from 'redux-persist/integration/react';
+import { store, persistor } from "@/services/store/store";
 import "../global.css";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAppSelector } from "@/hooks/redux-hooks/useAppSelector";
 
 function RootNavigator() {
   const colorScheme = useColorScheme();
-
   const { user } = useAppSelector((state) => state.auth);
-
   const segments = useSegments();
+  const navigationState = useRootNavigationState();
+  const router = useRouter();
 
-  const inAuthGroup = segments[0] === "(auth)";
+  useEffect(() => {
+    if (!navigationState?.key) return;
 
-  // NOT LOGGED IN
-  if (!user && !inAuthGroup) {
-    return <Redirect href="/login" />;
-  }
+    const inAuthGroup = segments[0] === "(auth)";
 
-  // LOGGED IN
-  if (user && inAuthGroup) {
-    return <Redirect href="/" />;
-  }
+    if (!user && !inAuthGroup) {
+      router.replace("/login");
+    } else if (user && inAuthGroup) {
+      router.replace("/");
+    }
+  }, [user, segments, navigationState?.key]);
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
@@ -58,7 +60,9 @@ function RootNavigator() {
 export default function RootLayout() {
   return (
     <Provider store={store}>
-      <RootNavigator />
+      <PersistGate loading={null} persistor={persistor}>
+        <RootNavigator />
+      </PersistGate>
     </Provider>
   );
 }

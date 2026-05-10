@@ -7,25 +7,24 @@ import {
   SafeAreaView,
   StatusBar,
   Modal,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
+import { useGetProductsQuery } from "@/services/features/products/productApi";
+import { useCreateOrderMutation } from "@/services/features/order/orderApi";
+import { useAppSelector } from "@/hooks/redux-hooks/useAppSelector";
 
-// Mock Data for the POS
-const PRODUCTS = [
-  { id: 1, name: "Espresso", price: 3.0, color: "bg-orange-100" },
-  { id: 2, name: "Iced Latte", price: 4.5, color: "bg-blue-100" },
-  { id: 3, name: "Matcha", price: 5.0, color: "bg-green-100" },
-  { id: 4, name: "Croissant", price: 3.5, color: "bg-yellow-100" },
-  { id: 5, name: "Americano", price: 3.25, color: "bg-stone-200" },
-  { id: 6, name: "Flat White", price: 4.0, color: "bg-orange-50" },
-];
+export default function CheckoutScreen() {
+  const { data: products, isLoading, error } = useGetProductsQuery();
+  const [createOrder, { isLoading: isCreating }] = useCreateOrderMutation();
+  const user = useAppSelector((state) => state.auth.user);
 
-export default function MidnightCornerPOS() {
   const [cart, setCart] = useState<
-    { id: number; name: string; price: number; quantity: number }[]
+    { id: string; name: string; price: number; quantity: number }[]
   >([]);
   const [isCartVisible, setIsCartVisible] = useState(false);
 
-  const addToCart = (product: (typeof PRODUCTS)[0]) => {
+  const addToCart = (product: any) => {
     setCart((prev) => {
       const existing = prev.find((item) => item.id === product.id);
       if (existing) {
@@ -35,7 +34,7 @@ export default function MidnightCornerPOS() {
             : item,
         );
       }
-      return [...prev, { ...product, quantity: 1 }];
+      return [...prev, { id: product.id, name: product.name, price: product.sellingPrice, quantity: 1 }];
     });
   };
 
@@ -44,6 +43,37 @@ export default function MidnightCornerPOS() {
     0,
   );
   const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+  const handleCharge = async () => {
+    if (cart.length === 0) return;
+    if (!user) {
+      Alert.alert("Error", "Please login to process orders.");
+      return;
+    }
+
+    try {
+      await createOrder({
+        subTotal: totalAmount,
+        grandTotal: totalAmount,
+        paymentMethod: "CASH",
+        paidAmount: totalAmount,
+        changeAmount: 0,
+        userId: user.id,
+        items: cart.map((item) => ({
+          productId: item.id,
+          quantity: item.quantity,
+          unitPrice: item.price,
+          subTotal: item.price * item.quantity,
+        })),
+      }).unwrap();
+
+      Alert.alert("Success", "Order completed successfully!");
+      setCart([]);
+      setIsCartVisible(false);
+    } catch (err: any) {
+      Alert.alert("Error", err?.data?.message || "Failed to create order");
+    }
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-slate-50">
@@ -59,41 +89,48 @@ export default function MidnightCornerPOS() {
             Point of Sale
           </Text>
         </View>
-        <TouchableOpacity className="w-10 h-10 bg-slate-100 rounded-full items-center justify-center">
-          <Text className="text-slate-600 font-bold">HT</Text>
+        <TouchableOpacity className="w-10 h-10 bg-slate-900 rounded-full items-center justify-center">
+          <Text className="text-white font-bold">{user?.name?.charAt(0).toUpperCase() || "U"}</Text>
         </TouchableOpacity>
       </View>
 
       {/* --- PRODUCT GRID --- */}
-      <ScrollView className="flex-1 px-4 pt-4">
-        <View className="flex-row flex-wrap justify-between">
-          {PRODUCTS.map((product) => (
-            <TouchableOpacity
-              key={product.id}
-              onPress={() => addToCart(product)}
-              activeOpacity={0.7}
-              className="bg-white p-3 rounded-2xl w-[48%] mb-4 shadow-sm border border-slate-100"
-            >
-              <View
-                className={`w-full aspect-square ${product.color} rounded-xl mb-3 items-center justify-center`}
-              >
-                <Text className="text-4xl">☕</Text>
-              </View>
-              <Text
-                className="font-bold text-slate-800 text-lg"
-                numberOfLines={1}
-              >
-                {product.name}
-              </Text>
-              <Text className="text-blue-600 font-black text-md mt-1">
-                ${product.price.toFixed(2)}
-              </Text>
-            </TouchableOpacity>
-          ))}
+      {isLoading ? (
+        <View className="flex-1 items-center justify-center">
+          <ActivityIndicator size="large" color="#0f172a" />
         </View>
-        {/* Padding for ScrollView to not hide behind the bottom bar */}
-        <View className="h-24" />
-      </ScrollView>
+      ) : error ? (
+        <View className="flex-1 items-center justify-center px-10">
+          <Text className="text-red-500 font-bold text-center">Failed to load products. Please check your backend connection.</Text>
+        </View>
+      ) : (
+        <ScrollView className="flex-1 px-4 pt-4">
+          <View className="flex-row flex-wrap justify-between">
+            {products?.map((product) => (
+              <TouchableOpacity
+                key={product.id}
+                onPress={() => addToCart(product)}
+                activeOpacity={0.7}
+                className="bg-white p-3 rounded-2xl w-[48%] mb-4 shadow-sm border border-slate-100"
+              >
+                <View className="w-full aspect-square bg-slate-50 rounded-xl mb-3 items-center justify-center">
+                  <Text className="text-4xl">☕</Text>
+                </View>
+                <Text
+                  className="font-bold text-slate-800 text-lg"
+                  numberOfLines={1}
+                >
+                  {product.name}
+                </Text>
+                <Text className="text-blue-600 font-black text-md mt-1">
+                  ${product.sellingPrice?.toFixed?.(2) || "0.00"}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <View className="h-24" />
+        </ScrollView>
+      )}
 
       {/* --- BOTTOM SUMMARY BAR --- */}
       {totalItems > 0 && (
@@ -103,14 +140,14 @@ export default function MidnightCornerPOS() {
               {totalItems} Items
             </Text>
             <Text className="text-2xl font-black text-slate-900">
-              ${totalAmount.toFixed(2)}
+              ${totalAmount?.toFixed?.(2) || "0.00"}
             </Text>
           </View>
           <TouchableOpacity
             onPress={() => setIsCartVisible(true)}
-            className="bg-blue-600 px-8 py-4 rounded-2xl shadow-blue-200 shadow-md"
+            className="bg-slate-900 px-8 py-4 rounded-2xl"
           >
-            <Text className="text-white font-bold text-lg">View Cart</Text>
+            <Text className="text-white font-bold text-lg">View Order</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -120,6 +157,7 @@ export default function MidnightCornerPOS() {
         visible={isCartVisible}
         animationType="slide"
         presentationStyle="pageSheet"
+        onRequestClose={() => setIsCartVisible(false)}
       >
         <View className="flex-1 bg-white p-6">
           <View className="flex-row justify-between items-center mb-8">
@@ -127,7 +165,7 @@ export default function MidnightCornerPOS() {
               Current Order
             </Text>
             <TouchableOpacity onPress={() => setIsCartVisible(false)}>
-              <Text className="text-blue-600 font-bold text-lg">Close</Text>
+              <Text className="text-slate-400 font-bold text-lg">Close</Text>
             </TouchableOpacity>
           </View>
 
@@ -138,8 +176,8 @@ export default function MidnightCornerPOS() {
                 className="flex-row justify-between items-center mb-6 pb-6 border-b border-slate-50"
               >
                 <View className="flex-row items-center">
-                  <View className="bg-slate-100 w-12 h-12 rounded-lg items-center justify-center mr-4">
-                    <Text className="font-bold text-slate-800">
+                  <View className="bg-slate-50 w-12 h-12 rounded-lg items-center justify-center mr-4">
+                    <Text className="font-bold text-slate-900">
                       {item.quantity}x
                     </Text>
                   </View>
@@ -148,12 +186,12 @@ export default function MidnightCornerPOS() {
                       {item.name}
                     </Text>
                     <Text className="text-slate-400 font-medium">
-                      ${item.price.toFixed(2)} each
+                      ${item.price?.toFixed?.(2) || "0.00"} each
                     </Text>
                   </View>
                 </View>
                 <Text className="text-lg font-black text-slate-900">
-                  ${(item.price * item.quantity).toFixed(2)}
+                  ${((item.price || 0) * (item.quantity || 0))?.toFixed?.(2) || "0.00"}
                 </Text>
               </View>
             ))}
@@ -165,20 +203,21 @@ export default function MidnightCornerPOS() {
                 Total Amount
               </Text>
               <Text className="text-3xl font-black text-slate-900">
-                ${totalAmount.toFixed(2)}
+                ${totalAmount?.toFixed?.(2) || "0.00"}
               </Text>
             </View>
             <TouchableOpacity
-              className="bg-blue-600 p-5 rounded-2xl items-center"
-              onPress={() => {
-                alert("Processing Payment...");
-                setCart([]);
-                setIsCartVisible(false);
-              }}
+              className={`p-5 rounded-2xl items-center ${isCreating ? 'bg-slate-400' : 'bg-slate-900'}`}
+              onPress={handleCharge}
+              disabled={isCreating}
             >
-              <Text className="text-white font-black text-xl">
-                Confirm & Charge
-              </Text>
+              {isCreating ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text className="text-white font-black text-xl">
+                  Confirm & Charge
+                </Text>
+              )}
             </TouchableOpacity>
           </View>
         </View>

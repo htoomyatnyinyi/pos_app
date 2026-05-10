@@ -15,7 +15,7 @@ export default function OrdersScreen() {
   return (
     <SafeAreaView className="flex-1 bg-slate-50">
       <View className="px-8 pt-10 pb-6">
-        <Text className="text-4xl font-black text-slate-900 tracking-tight">Order History</Text>
+        <Text className="text-4xl font-black text-slate-900 tracking-tight">Sales History</Text>
         <Text className="text-slate-400 font-medium text-sm uppercase tracking-widest mt-1">Review your recent transactions</Text>
       </View>
 

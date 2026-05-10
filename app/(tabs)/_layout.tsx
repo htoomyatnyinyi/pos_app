@@ -34,7 +34,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Register",
+          title: "Checkout",
           tabBarIcon: ({ color }) => (
             <IconSymbol size={24} name="cart.fill" color={color} />
           ),
@@ -43,7 +43,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="orders"
         options={{
-          title: "Orders",
+          title: "History",
           tabBarIcon: ({ color }) => (
             <IconSymbol size={24} name="clock.fill" color={color} />
           ),
@@ -52,7 +52,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="inventory"
         options={{
-          title: "Inventory",
+          title: "Products",
           tabBarIcon: ({ color }) => (
             <IconSymbol size={24} name="square.grid.2x2.fill" color={color} />
           ),
