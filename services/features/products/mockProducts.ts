@@ -47,11 +47,11 @@ export const mockProdcuts = [
     img: "https://via.placeholder.com/150",
     originalPrice: 3200,
     sellingPrice: 7600,
-    categories: "GroupD",
+    categories: "GroupC",
     quantities: 9,
   },
   {
-    id: 6,
+    id: 7,
     img: "https://via.placeholder.com/150",
     originalPrice: 3200,
     sellingPrice: 7600,
@@ -59,7 +59,7 @@ export const mockProdcuts = [
     quantities: 9,
   },
   {
-    id: 6,
+    id: 8,
     img: "https://via.placeholder.com/150",
     originalPrice: 3200,
     sellingPrice: 7600,
@@ -67,7 +67,7 @@ export const mockProdcuts = [
     quantities: 9,
   },
   {
-    id: 6,
+    id: 9,
     img: "https://via.placeholder.com/150",
     originalPrice: 3200,
     sellingPrice: 7600,
@@ -75,7 +75,7 @@ export const mockProdcuts = [
     quantities: 9,
   },
   {
-    id: 6,
+    id: 10,
     img: "https://via.placeholder.com/150",
     originalPrice: 3200,
     sellingPrice: 7600,
@@ -83,7 +83,7 @@ export const mockProdcuts = [
     quantities: 9,
   },
   {
-    id: 6,
+    id: 11,
     img: "https://via.placeholder.com/150",
     originalPrice: 3200,
     sellingPrice: 7600,
@@ -91,7 +91,7 @@ export const mockProdcuts = [
     quantities: 9,
   },
   {
-    id: 6,
+    id: 12,
     img: "https://via.placeholder.com/150",
     originalPrice: 3200,
     sellingPrice: 7600,
@@ -99,15 +99,15 @@ export const mockProdcuts = [
     quantities: 9,
   },
   {
-    id: 6,
+    id: 13,
     img: "https://via.placeholder.com/150",
     originalPrice: 3200,
     sellingPrice: 7600,
-    categories: "GroupJ",
+    categories: "GroupI",
     quantities: 9,
   },
   {
-    id: 6,
+    id: 14,
     img: "https://via.placeholder.com/150",
     originalPrice: 3200,
     sellingPrice: 7600,
