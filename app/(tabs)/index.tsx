@@ -1,30 +1,42 @@
-import React, { useMemo, useState, useEffect } from "react";
+import { useGetCategoriesQuery } from "@/services/features/categories/categoryApi";
+import { mockProdcuts } from "@/services/features/products/mockProducts";
+import { useGetProductsQuery } from "@/services/features/products/productApi";
+import { Product } from "@/services/features/products/productTypes";
+import { router } from "expo-router";
+import React, { useEffect, useMemo, useState } from "react";
+import { FaBars, FaCartPlus } from "react-icons/fa";
 import {
   ActivityIndicator,
   SafeAreaView,
   ScrollView,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
-  Image,
-  TextInput,
 } from "react-native";
-import { FaCartPlus, FaBars, FaMinus } from "react-icons/fa";
-import { router } from "expo-router";
-import { mockProdcuts } from "@/services/features/products/mockProducts";
 
 const StockItems = () => {
-  const [isLoading] = useState(false);
-  const [error] = useState(false);
-  const [cartItems, setCartItems] = useState([]);
+  // FETCH API DATA
+  const { data: apiProducts = [], isLoading, error } = useGetProductsQuery();
 
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  // const [isLoading] = useState(false);
+  // const [error] = useState(false);
+  const [cartItems, setCartItems] = useState([]);
   const [showSidebar, setShowSidebar] = useState(true);
 
-  const [products, setProducts] = useState(mockProdcuts);
+  const [products, setProducts] = useState<Product[]>([]);
   const [cartCount, setCartCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const { data: categoryData = [], isLoading: boolean } =
+    useGetCategoriesQuery();
 
+  // SET PRODUCTS FROM API
+  useEffect(() => {
+    if (apiProducts) {
+      setProducts(apiProducts);
+    }
+  }, [apiProducts]);
   // unique categories
   const categories = useMemo(() => {
     const unique = [
@@ -40,14 +52,14 @@ const StockItems = () => {
       const matchingProducts = products.filter((product) => {
         const query = searchQuery.toLowerCase();
         return (
-          product.categories.toLowerCase().includes(query) ||
+          product.categoryId.toLowerCase().includes(query) ||
           product.sellingPrice.toString().includes(query) ||
-          product.originalPrice.toString().includes(query) ||
-          product.quantities.toString().includes(query)
+          product.costPrice.toString().includes(query) ||
+          product.stockQuantity.toString().includes(query)
         );
       });
       const uniqueCategories = [
-        ...new Set(matchingProducts.map((p) => p.categories)),
+        ...new Set(matchingProducts.map((p) => p.categoryId)),
       ];
       if (uniqueCategories.length === 1) {
         setSelectedCategory(uniqueCategories[0]);
@@ -63,16 +75,16 @@ const StockItems = () => {
   const filteredProducts =
     selectedCategory === "All"
       ? products
-      : products.filter((product) => product.categories === selectedCategory);
+      : products.filter((product) => product.categoryId === selectedCategory);
 
   const displayedProducts = filteredProducts.filter((product) => {
     if (searchQuery.length === 0) return true;
     const query = searchQuery.toLowerCase();
     return (
-      product.categories.toLowerCase().includes(query) ||
+      product.categoryId.toLowerCase().includes(query) ||
       product.sellingPrice.toString().includes(query) ||
-      product.originalPrice.toString().includes(query) ||
-      product.quantities.toString().includes(query)
+      product.costPrice.toString().includes(query) ||
+      product.stockQuantity.toString().includes(query)
     );
   });
 
@@ -80,7 +92,7 @@ const StockItems = () => {
   const handleAddToCart = (id: any) => {
     const selectedProduct = products.find((p) => p.id === id);
 
-    if (!selectedProduct || selectedProduct.quantities <= 0) return;
+    if (!selectedProduct || selectedProduct.stockQuantity <= 0) return;
 
     // 1. reduce stock
     setProducts((prev) =>
@@ -88,7 +100,7 @@ const StockItems = () => {
         product.id === id
           ? {
               ...product,
-              quantities: product.quantities - 1,
+              quantities: product.stockQuantity - 1,
             }
           : product,
       ),
@@ -134,7 +146,7 @@ const StockItems = () => {
         product.id === id
           ? {
               ...product,
-              quantities: product.quantities + 1,
+              quantities: product.stockQuantity + 1,
             }
           : product,
       ),
@@ -244,14 +256,14 @@ const StockItems = () => {
             {showSidebar && (
               <View className="w-32 bg-white border-r border-slate-200 py-4">
                 <ScrollView showsVerticalScrollIndicator={false}>
-                  {categories.map((category, i) => {
-                    const active = selectedCategory === category;
+                  {categoryData.map((category, i) => {
+                    const active = selectedCategory === category.name;
 
                     return (
                       <TouchableOpacity
                         key={i}
                         activeOpacity={0.8}
-                        onPress={() => setSelectedCategory(category)}
+                        onPress={() => setSelectedCategory(category.name)}
                         className={`mx-3 mb-3 px-4 py-3 rounded-2xl ${
                           active
                             ? "bg-slate-900"
@@ -261,7 +273,7 @@ const StockItems = () => {
                           className={`font-bold text-center ${
                             active ? "text-white" : "text-slate-700"
                           }`}>
-                          {category}
+                          {category.name}
                         </Text>
                       </TouchableOpacity>
                     );
@@ -293,16 +305,16 @@ const StockItems = () => {
                       key={product.id}
                       className="w-[48%] rounded-3xl mb-4 p-4 border shadow-sm bg-white border-slate-200">
                       {/* IMAGE */}
-                      <Image
+                      {/* <Image
                         source={{ uri: product.img }}
                         className="w-full h-32 rounded-2xl bg-slate-100"
                         resizeMode="cover"
-                      />
+                      /> */}
 
                       {/* INFO */}
                       <View className="mt-4">
                         <Text className="text-slate-400 text-xs font-bold uppercase">
-                          {product.categories}
+                          {product.categoryId}
                         </Text>
 
                         <Text className="text-lg font-black text-slate-900 mt-1">
@@ -310,12 +322,12 @@ const StockItems = () => {
                         </Text>
 
                         <Text className="text-slate-500 text-sm line-through">
-                          {product.originalPrice} MMK
+                          {product.costPrice} MMK
                         </Text>
 
                         <View className="flex-row justify-between items-center mt-3">
                           <Text className="text-sm font-bold text-slate-700">
-                            Stock: {product.quantities}
+                            Stock: {product.stockQuantity}
                           </Text>
 
                           <View className="flex-row gap-2">

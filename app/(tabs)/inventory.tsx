@@ -1,27 +1,25 @@
-import React, { useState, useEffect } from "react";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { useGetCategoriesQuery } from "@/services/features/categories/categoryApi";
 import {
-  View,
-  Text,
-  ScrollView,
-  SafeAreaView,
+  useCreateProductMutation,
+  useDeleteProductMutation,
+  useGetProductsQuery,
+  useUpdateProductMutation,
+} from "@/services/features/products/productApi";
+import React, { useEffect, useState } from "react";
+import {
   ActivityIndicator,
-  TouchableOpacity,
-  Modal,
-  TextInput,
   Alert,
   KeyboardAvoidingView,
+  Modal,
   Platform,
-  Image,
+  ScrollView,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import * as ImagePicker from "expo-image-picker";
-import {
-  useGetProductsQuery,
-  useCreateProductMutation,
-  useUpdateProductMutation,
-  useDeleteProductMutation,
-} from "@/services/features/products/productApi";
-import { useGetCategoriesQuery } from "@/services/features/categories/categoryApi";
-import { IconSymbol } from "@/components/ui/icon-symbol";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function InventoryScreen() {
   const { data: products, isLoading, error } = useGetProductsQuery();
@@ -42,9 +40,7 @@ export default function InventoryScreen() {
   const [sellingPrice, setSellingPrice] = useState("");
   const [costPrice, setCostPrice] = useState("");
   const [stockQuantity, setStockQuantity] = useState("");
-  const [categoryText, setCategoryText] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [categoryId, setCategoryId] = useState("");
 
   useEffect(() => {
     if (editingProduct) {
@@ -56,25 +52,15 @@ export default function InventoryScreen() {
       setSellingPrice(editingProduct.sellingPrice.toString());
       setCostPrice(editingProduct.costPrice.toString());
       setStockQuantity(editingProduct.stockQuantity.toString());
-      setImageUrl(editingProduct.imageUrl || "");
-      setSelectedImage(editingProduct.imageUrl || null);
-      const matchedCategory = categories?.find(
-        (cat) => cat.id === editingProduct.categoryId,
-      );
-      setCategoryText(matchedCategory?.name || editingProduct.categoryId || "");
+      setCategoryId(editingProduct.categoryId);
     } else {
       resetForm();
     }
-  }, [editingProduct, categories]);
+  }, [editingProduct]);
 
   useEffect(() => {
-    if (
-      !editingProduct &&
-      categories &&
-      categories.length > 0 &&
-      !categoryText
-    ) {
-      setCategoryText(categories[0].name);
+    if (!editingProduct && categories && categories.length > 0 && !categoryId) {
+      setCategoryId(categories[0].id);
     }
   }, [categories]);
 
@@ -87,124 +73,22 @@ export default function InventoryScreen() {
     setSellingPrice("");
     setCostPrice("");
     setStockQuantity("");
-    setImageUrl("");
-    setSelectedImage(null);
-    setCategoryText(categories?.[0]?.name || "");
-  };
-
-  const pickImage = async () => {
-    console.log("pickImage called, Platform.OS:", Platform.OS);
-    try {
-      // Request permissions (skip on web as it's handled by browser)
-      if (Platform.OS !== "web") {
-        console.log("Requesting media library permissions...");
-        const { status } =
-          await ImagePicker.requestMediaLibraryPermissionsAsync();
-        console.log("Media library permission status:", status);
-        if (status !== "granted") {
-          Alert.alert(
-            "Permission needed",
-            "Camera roll permissions are required to select images.",
-          );
-          return;
-        }
-      }
-
-      // On web, directly open gallery. On mobile, show options
-      if (Platform.OS === "web") {
-        console.log("Opening gallery for web...");
-        openGallery();
-      } else {
-        console.log("Showing alert for mobile options...");
-        // Show options for mobile
-        Alert.alert("Select Image", "Choose image source", [
-          { text: "Camera", onPress: openCamera },
-          { text: "Gallery", onPress: openGallery },
-          { text: "Cancel", style: "cancel" },
-        ]);
-      }
-    } catch (error) {
-      console.error("Error in pickImage:", error);
-      Alert.alert("Error", "Failed to open image picker");
-    }
-  };
-
-  const openCamera = async () => {
-    try {
-      if (Platform.OS !== "web") {
-        const { status } = await ImagePicker.requestCameraPermissionsAsync();
-        if (status !== "granted") {
-          Alert.alert("Permission needed", "Camera permissions are required.");
-          return;
-        }
-      }
-
-      const result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.8,
-        base64: true,
-      });
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const uri = result.assets[0].uri;
-        const base64 = result.assets[0].base64;
-        setSelectedImage(uri);
-        setImageUrl(`data:image/jpeg;base64,${base64}`);
-      }
-    } catch (error) {
-      console.error("Error opening camera:", error);
-      Alert.alert("Error", "Failed to open camera");
-    }
-  };
-
-  const openGallery = async () => {
-    console.log("openGallery called");
-    try {
-      console.log("Launching image library...");
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0.8,
-        base64: true,
-      });
-
-      console.log("Image picker result:", result);
-
-      if (!result.canceled && result.assets && result.assets.length > 0) {
-        const uri = result.assets[0].uri;
-        const base64 = result.assets[0].base64;
-        console.log("Setting image:", uri);
-        setSelectedImage(uri);
-        setImageUrl(`data:image/jpeg;base64,${base64}`);
-      } else {
-        console.log("Image selection canceled or no assets");
-      }
-    } catch (error) {
-      console.error("Error opening gallery:", error);
-      Alert.alert("Error", "Failed to open gallery");
-    }
+    setCategoryId(categories?.[0]?.id || "");
   };
 
   const handleSave = async () => {
-    if (
-      !name ||
-      !sku ||
-      !sellingPrice ||
-      !costPrice ||
-      !stockQuantity ||
-      !categoryText
-    ) {
+    if (!name || !sku || !sellingPrice || !costPrice || !stockQuantity) {
       Alert.alert("Error", "Please fill in all required fields.");
       return;
     }
 
-    const matchedCategory = categories?.find(
-      (cat) => cat.name.toLowerCase() === categoryText.trim().toLowerCase(),
-    );
-    const categoryIdToSave = matchedCategory?.id || categoryText.trim();
+    if (!categoryId && (!categories || categories.length === 0)) {
+      Alert.alert(
+        "Error",
+        "No categories found. Please create a category first.",
+      );
+      return;
+    }
 
     const payload = {
       name,
@@ -215,8 +99,7 @@ export default function InventoryScreen() {
       sellingPrice: parseFloat(sellingPrice),
       costPrice: parseFloat(costPrice),
       stockQuantity: parseInt(stockQuantity),
-      categoryId: categoryIdToSave,
-      imageUrl: imageUrl || undefined,
+      categoryId: categoryId || categories?.[0]?.id,
     };
 
     try {
@@ -311,17 +194,9 @@ export default function InventoryScreen() {
             <View
               key={product.id}
               className="bg-white p-6 rounded-3xl mb-4 shadow-sm border border-slate-100 flex-row items-center">
-              {product.imageUrl ? (
-                <Image
-                  source={{ uri: product.imageUrl }}
-                  className="w-16 h-16 rounded-2xl mr-5"
-                  resizeMode="cover"
-                />
-              ) : (
-                <View className="w-16 h-16 bg-slate-50 rounded-2xl items-center justify-center mr-5">
-                  <Text className="text-3xl">📦</Text>
-                </View>
-              )}
+              <View className="w-16 h-16 bg-slate-50 rounded-2xl items-center justify-center mr-5">
+                <Text className="text-3xl">📦</Text>
+              </View>
               <View className="flex-1">
                 <Text
                   className="text-slate-900 font-black text-xl"
@@ -369,29 +244,25 @@ export default function InventoryScreen() {
       <Modal
         visible={isModalVisible}
         animationType="slide"
-        presentationStyle="fullScreen"
+        presentationStyle="pageSheet"
         onRequestClose={() => setIsModalVisible(false)}>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           className="flex-1 bg-white">
-          <View className="flex-1">
-            <View className="p-8 pb-4">
-              <View className="flex-row justify-between items-center mb-6">
-                <Text className="text-3xl font-black text-slate-900">
-                  {editingProduct ? "Edit Product" : "New Product"}
-                </Text>
-                <TouchableOpacity onPress={() => setIsModalVisible(false)}>
-                  <Text className="text-slate-400 font-bold text-lg">
-                    Cancel
-                  </Text>
-                </TouchableOpacity>
-              </View>
+          <View className="p-8">
+            <View className="flex-row justify-between items-center mb-10">
+              <Text className="text-3xl font-black text-slate-900">
+                {editingProduct ? "Edit Product" : "New Product"}
+              </Text>
+              <TouchableOpacity onPress={() => setIsModalVisible(false)}>
+                <Text className="text-slate-400 font-bold text-lg">Cancel</Text>
+              </TouchableOpacity>
             </View>
 
             <ScrollView
               showsVerticalScrollIndicator={false}
-              className="flex-1 px-8"
-              contentContainerStyle={{ paddingBottom: 120, gap: 24 }}>
+              className="gap-6"
+              contentContainerStyle={{ paddingBottom: 100 }}>
               <View>
                 <Text className="text-slate-500 font-bold mb-2 ml-1">
                   Product Name *
@@ -500,48 +371,25 @@ export default function InventoryScreen() {
                 <Text className="text-slate-500 font-bold mb-2 ml-1">
                   Category *
                 </Text>
-                <TextInput
-                  placeholder="e.g. Coffee, Snacks"
-                  value={categoryText}
-                  onChangeText={setCategoryText}
-                  className="bg-slate-50 p-5 rounded-2xl text-slate-900 font-bold text-lg"
-                />
                 {categories && categories.length > 0 ? (
-                  <Text className="text-slate-400 mt-2 text-sm">
-                    Tip: type a category name that already exists or enter a new
-                    one.
+                  <View className="flex-row flex-wrap gap-2">
+                    {categories.map((cat) => (
+                      <TouchableOpacity
+                        key={cat.id}
+                        onPress={() => setCategoryId(cat.id)}
+                        className={`px-4 py-2 rounded-full border ${categoryId === cat.id ? "bg-slate-900 border-slate-900" : "bg-white border-slate-200"}`}>
+                        <Text
+                          className={`font-bold ${categoryId === cat.id ? "text-white" : "text-slate-600"}`}>
+                          {cat.name}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                ) : (
+                  <Text className="text-red-500 italic">
+                    No categories available. Please create one in the backend.
                   </Text>
-                ) : null}
-              </View>
-
-              <View>
-                <Text className="text-slate-500 font-bold mb-2 ml-1">
-                  Product Image
-                </Text>
-                <TouchableOpacity
-                  onPress={() => {
-                    console.log("Image picker pressed");
-                    pickImage();
-                  }}
-                  className="bg-slate-50 p-5 rounded-2xl items-center justify-center min-h-[120]">
-                  {selectedImage ? (
-                    <Image
-                      source={{ uri: selectedImage }}
-                      className="w-20 h-20 rounded-xl"
-                      resizeMode="cover"
-                    />
-                  ) : (
-                    <View className="items-center">
-                      <Text className="text-slate-400 text-4xl mb-2">📷</Text>
-                      <Text className="text-slate-600 font-bold">
-                        Tap to select image
-                      </Text>
-                      <Text className="text-slate-400 text-sm mt-1">
-                        Camera or Gallery
-                      </Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
+                )}
               </View>
 
               <TouchableOpacity
