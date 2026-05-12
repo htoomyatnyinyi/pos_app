@@ -20,6 +20,7 @@ import {
 import { useGetCategoriesQuery } from "@/services/features/categories/categoryApi";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { SafeAreaView } from "react-native-safe-area-context";
+import BarcodeScannerModal from "@/components/BarcodeScannerModal";
 
 export default function InventoryScreen() {
   const { data: products, isLoading, error } = useGetProductsQuery();
@@ -31,6 +32,7 @@ export default function InventoryScreen() {
 
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
+  const [isScannerVisible, setIsScannerVisible] = useState(false);
   
   const [name, setName] = useState("");
   const [sku, setSku] = useState("");
@@ -148,6 +150,12 @@ export default function InventoryScreen() {
     setIsModalVisible(true);
   };
 
+  const handleBarcodeScan = (scannedBarcode: string, type: string) => {
+    setBarcode(scannedBarcode);
+    setIsScannerVisible(false);
+    Alert.alert("Barcode Scanned", `Type: ${type}\nValue: ${scannedBarcode}`, [{ text: "OK" }]);
+  };
+
   return (
     <SafeAreaView className="flex-1 bg-slate-50">
       <View className="px-8 pt-10 pb-6 flex-row justify-between items-end">
@@ -187,6 +195,12 @@ export default function InventoryScreen() {
                 <View className="flex-row items-center mt-1">
                   <Text className="text-slate-400 font-bold text-sm">SKU: </Text>
                   <Text className="text-slate-900 font-bold text-sm mr-2">{product.sku}</Text>
+                  {product.barcode && (
+                    <>
+                      <Text className="text-slate-200 mx-1">|</Text>
+                      <Text className="text-blue-500 font-bold text-sm">📱 {product.barcode}</Text>
+                    </>
+                  )}
                   <Text className="text-slate-200 mx-2">|</Text>
                   <Text className="text-slate-400 font-bold text-sm">Stock: </Text>
                   <Text className={`${product.stockQuantity < 10 ? 'text-red-500' : 'text-green-600'} font-bold text-sm`}>
@@ -258,12 +272,21 @@ export default function InventoryScreen() {
                 </View>
                 <View className="flex-1">
                   <Text className="text-slate-500 font-bold mb-2 ml-1">Barcode</Text>
-                  <TextInput 
-                    placeholder="885..."
-                    value={barcode}
-                    onChangeText={setBarcode}
-                    className="bg-slate-50 p-5 rounded-2xl text-slate-900 font-bold text-lg"
-                  />
+                  <View className="flex-row items-center">
+                    <TextInput 
+                      placeholder="Scan or type..."
+                      value={barcode}
+                      onChangeText={setBarcode}
+                      className="bg-slate-50 p-5 rounded-2xl text-slate-900 font-bold text-lg flex-1"
+                    />
+                    <TouchableOpacity 
+                      onPress={() => setIsScannerVisible(true)}
+                      activeOpacity={0.7}
+                      className="bg-blue-500 p-5 rounded-2xl ml-2"
+                    >
+                      <Text className="text-white text-lg">📷</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
 
@@ -354,6 +377,14 @@ export default function InventoryScreen() {
           </View>
         </KeyboardAvoidingView>
       </Modal>
+
+      {/* Barcode Scanner Modal */}
+      <BarcodeScannerModal
+        visible={isScannerVisible}
+        onClose={() => setIsScannerVisible(false)}
+        onScanned={handleBarcodeScan}
+        title="Scan Product Barcode"
+      />
     </SafeAreaView>
   );
 }

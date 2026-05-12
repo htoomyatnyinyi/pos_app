@@ -42,6 +42,10 @@ export const productApi = posApi.injectEndpoints({
       }),
       invalidatesTags: ["Products"],
     }),
+
+    getProductByBarcode: builder.query<{ found: boolean; product?: Product; message?: string }, string>({
+      query: (barcode) => `/products/barcode/${barcode}`,
+    }),
   }),
 });
 
@@ -51,4 +55,5 @@ export const {
   useCreateProductMutation,
   useUpdateProductMutation,
   useDeleteProductMutation,
+  useLazyGetProductByBarcodeQuery,
 } = productApi;

@@ -18,7 +18,7 @@ export const posApi = createApi({
     },
   }),
 
-  tagTypes: ["Auth", "Products", "Orders", "Customers", "Staff", "Categories"],
+  tagTypes: ["Auth", "Products", "Orders", "Customers", "Staff", "Categories", "Inventory"],
 
   endpoints: () => ({}),
 });
