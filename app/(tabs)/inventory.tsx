@@ -1,5 +1,8 @@
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { useGetCategoriesQuery } from "@/services/features/categories/categoryApi";
+import {
+  useCreateCategoryMutation,
+  useGetCategoriesQuery,
+} from "@/services/features/categories/categoryApi";
 import {
   useCreateProductMutation,
   useDeleteProductMutation,
@@ -41,6 +44,10 @@ export default function InventoryScreen() {
   const [costPrice, setCostPrice] = useState("");
   const [stockQuantity, setStockQuantity] = useState("");
   const [categoryId, setCategoryId] = useState("");
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+
+  const [createCategory] = useCreateCategoryMutation();
 
   useEffect(() => {
     if (editingProduct) {
@@ -74,6 +81,37 @@ export default function InventoryScreen() {
     setCostPrice("");
     setStockQuantity("");
     setCategoryId(categories?.[0]?.id || "");
+  };
+
+  const handleCreateCategory = async () => {
+    if (!newCategoryName.trim()) {
+      Alert.alert("Error", "Category name is required.");
+      return;
+    }
+
+    try {
+      setIsAddingCategory(true);
+
+      const slug = newCategoryName.toLowerCase().replace(/\s+/g, "-");
+
+      const newCategory = await createCategory({
+        name: newCategoryName,
+        slug,
+        description: "",
+        sortOrder: 0,
+      }).unwrap();
+
+      setCategoryId(newCategory.id);
+      setNewCategoryName("");
+
+      Alert.alert("Success", "Category created successfully.");
+    } catch (err: any) {
+      console.error(err);
+
+      Alert.alert("Error", err?.data?.message || "Failed to create category.");
+    } finally {
+      setIsAddingCategory(false);
+    }
   };
 
   const handleSave = async () => {
@@ -371,25 +409,54 @@ export default function InventoryScreen() {
                 <Text className="text-slate-500 font-bold mb-2 ml-1">
                   Category *
                 </Text>
+
+                {/* Existing Categories */}
                 {categories && categories.length > 0 ? (
-                  <View className="flex-row flex-wrap gap-2">
+                  <View className="flex-row flex-wrap gap-2 mb-4">
                     {categories.map((cat) => (
                       <TouchableOpacity
                         key={cat.id}
                         onPress={() => setCategoryId(cat.id)}
-                        className={`px-4 py-2 rounded-full border ${categoryId === cat.id ? "bg-slate-900 border-slate-900" : "bg-white border-slate-200"}`}>
+                        className={`px-4 py-2 rounded-full border ${
+                          categoryId === cat.id
+                            ? "bg-slate-900 border-slate-900"
+                            : "bg-white border-slate-200"
+                        }`}>
                         <Text
-                          className={`font-bold ${categoryId === cat.id ? "text-white" : "text-slate-600"}`}>
+                          className={`font-bold ${
+                            categoryId === cat.id
+                              ? "text-white"
+                              : "text-slate-600"
+                          }`}>
                           {cat.name}
                         </Text>
                       </TouchableOpacity>
                     ))}
                   </View>
                 ) : (
-                  <Text className="text-red-500 italic">
-                    No categories available. Please create one in the backend.
+                  <Text className="text-orange-500 italic mb-4">
+                    No categories yet. Create one below.
                   </Text>
                 )}
+
+                {/* Add New Category */}
+                <View className="flex-row items-center gap-2">
+                  <TextInput
+                    placeholder="New category name"
+                    value={newCategoryName}
+                    onChangeText={setNewCategoryName}
+                    className="flex-1 border border-slate-300 rounded-xl px-4 py-3 bg-white"
+                  />
+
+                  <TouchableOpacity
+                    disabled={isAddingCategory}
+                    onPress={handleCreateCategory}
+                    className="bg-slate-900 px-5 py-3 rounded-xl">
+                    <Text className="text-white font-bold">
+                      {isAddingCategory ? "..." : "Add"}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
 
               <TouchableOpacity

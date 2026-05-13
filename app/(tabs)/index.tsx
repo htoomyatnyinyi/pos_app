@@ -100,7 +100,7 @@ const StockItems = () => {
         product.id === id
           ? {
               ...product,
-              quantities: product.stockQuantity - 1,
+              stockQuantity: product.stockQuantity - 1,
             }
           : product,
       ),
@@ -146,7 +146,7 @@ const StockItems = () => {
         product.id === id
           ? {
               ...product,
-              quantities: product.stockQuantity + 1,
+              stockQuantity: product.stockQuantity + 1,
             }
           : product,
       ),
@@ -256,14 +256,34 @@ const StockItems = () => {
             {showSidebar && (
               <View className="w-32 bg-white border-r border-slate-200 py-4">
                 <ScrollView showsVerticalScrollIndicator={false}>
-                  {categoryData.map((category, i) => {
-                    const active = selectedCategory === category.name;
+                  {/* ALL CATEGORY */}
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => setSelectedCategory("All")}
+                    className={`mx-3 mb-3 px-4 py-3 rounded-2xl ${
+                      selectedCategory === "All"
+                        ? "bg-slate-900"
+                        : "bg-slate-100 border border-slate-200"
+                    }`}>
+                    <Text
+                      className={`font-bold text-center ${
+                        selectedCategory === "All"
+                          ? "text-white"
+                          : "text-slate-700"
+                      }`}>
+                      All
+                    </Text>
+                  </TouchableOpacity>
+
+                  {/* REAL CATEGORIES */}
+                  {categoryData.map((category) => {
+                    const active = selectedCategory === category.id;
 
                     return (
                       <TouchableOpacity
-                        key={i}
+                        key={category.id}
                         activeOpacity={0.8}
-                        onPress={() => setSelectedCategory(category.name)}
+                        onPress={() => setSelectedCategory(category.id)}
                         className={`mx-3 mb-3 px-4 py-3 rounded-2xl ${
                           active
                             ? "bg-slate-900"
