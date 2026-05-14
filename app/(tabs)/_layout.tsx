@@ -1,73 +1,42 @@
 import { Tabs } from "expo-router";
 import React from "react";
-import { Platform } from "react-native";
-
+import { Platform, View, Text } from "react-native";
 import { HapticTab } from "@/components/haptic-tab";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { Colors } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
+function TabIcon({ emoji, label, focused }: { emoji: string; label: string; focused: boolean }) {
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: colorScheme === 'dark' ? '#fff' : '#0f172a',
-        tabBarInactiveTintColor: '#94a3b8',
-        headerShown: false,
-        tabBarButton: HapticTab,
-        tabBarStyle: {
-          backgroundColor: colorScheme === 'dark' ? '#000' : '#fff',
-          borderTopWidth: 1,
-          borderTopColor: colorScheme === 'dark' ? '#1e293b' : '#f1f5f9',
-          height: Platform.OS === 'ios' ? 88 : 64,
-          paddingBottom: Platform.OS === 'ios' ? 28 : 12,
-          paddingTop: 12,
-        },
-        tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '600',
-        },
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "Checkout",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={24} name="cart.fill" color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="orders"
-        options={{
-          title: "History",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={24} name="clock.fill" color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="inventory"
-        options={{
-          title: "Products",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={24} name="square.grid.2x2.fill" color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: "Settings",
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={24} name="gearshape.fill" color={color} />
-          ),
-        }}
-      />
-    </Tabs>
+    <View className="items-center justify-center gap-1.5 mt-2">
+      <View className={`w-14 h-9 rounded-2xl items-center justify-center transition-all ${focused ? 'bg-indigo-500/20 border border-indigo-500/30' : 'bg-transparent'}`}>
+        <Text className={`text-xl ${focused ? 'opacity-100' : 'opacity-40'}`}>{emoji}</Text>
+      </View>
+      <Text className={`text-[9px] font-black tracking-[1.5px] uppercase ${focused ? 'text-indigo-400' : 'text-slate-600'}`}>
+        {label}
+      </Text>
+    </View>
   );
 }
 
+export default function TabLayout() {
+  return (
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarButton: HapticTab,
+        tabBarShowLabel: false,
+        tabBarStyle: {
+          backgroundColor: "#1a1c24",
+          borderTopWidth: 1,
+          borderTopColor: "#252833",
+          height: Platform.OS === "ios" ? 94 : 74,
+          paddingBottom: Platform.OS === "ios" ? 32 : 12,
+          elevation: 0,
+        },
+      }}
+    >
+      <Tabs.Screen name="index" options={{ tabBarIcon: ({ focused }) => <TabIcon emoji="📱" label="POS" focused={focused} /> }} />
+      <Tabs.Screen name="orders" options={{ tabBarIcon: ({ focused }) => <TabIcon emoji="🧾" label="Sales" focused={focused} /> }} />
+      <Tabs.Screen name="inventory" options={{ tabBarIcon: ({ focused }) => <TabIcon emoji="📦" label="Items" focused={focused} /> }} />
+      <Tabs.Screen name="settings" options={{ tabBarIcon: ({ focused }) => <TabIcon emoji="⚙️" label="Admin" focused={focused} /> }} />
+    </Tabs>
+  );
+}

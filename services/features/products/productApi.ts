@@ -16,23 +16,23 @@ export const productApi = posApi.injectEndpoints({
       query: (id) => `/products/${id}`,
     }),
 
-    createProduct: builder.mutation<Product, Partial<Product>>({
+    createProduct: builder.mutation<Product, Partial<Product> & { categoryName?: string }>({
       query: (body) => ({
         url: "/products",
         method: "POST",
         body,
       }),
 
-      invalidatesTags: ["Products"],
+      invalidatesTags: ["Products", "Categories"],
     }),
 
-    updateProduct: builder.mutation<Product, { id: string; data: Partial<Product> }>({
+    updateProduct: builder.mutation<Product, { id: string; data: Partial<Product> & { categoryName?: string } }>({
       query: ({ id, data }) => ({
         url: `/products/${id}`,
         method: "PUT",
         body: data,
       }),
-      invalidatesTags: ["Products"],
+      invalidatesTags: ["Products", "Categories"],
     }),
 
     deleteProduct: builder.mutation<void, string>({

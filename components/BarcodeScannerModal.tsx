@@ -17,7 +17,7 @@ const SCAN_AREA_SIZE = SCREEN_WIDTH * 0.7;
 interface BarcodeScannerModalProps {
   visible: boolean;
   onClose: () => void;
-  onScanned: (barcode: string, type: string) => void;
+  onScanned: (barcode: string, type: string, continuous?: boolean) => void;
   title?: string;
 }
 
@@ -30,6 +30,7 @@ export default function BarcodeScannerModal({
   const [permission, requestPermission] = useCameraPermissions();
   const [torch, setTorch] = useState(false);
   const [scanned, setScanned] = useState(false);
+  const [isContinuous, setIsContinuous] = useState(false);
   const scanLineAnim = useRef(new Animated.Value(0)).current;
 
   // Animate scan line
@@ -59,12 +60,14 @@ export default function BarcodeScannerModal({
     (result: BarcodeScanningResult) => {
       if (scanned) return;
       setScanned(true);
-      onScanned(result.data, result.type);
+      onScanned(result.data, result.type, isContinuous);
 
-      // Reset after 2 seconds to allow scanning again
-      setTimeout(() => setScanned(false), 2000);
+      if (isContinuous) {
+        // Reset faster in continuous mode for rapid scanning
+        setTimeout(() => setScanned(false), 1000);
+      }
     },
-    [scanned, onScanned]
+    [scanned, onScanned, isContinuous]
   );
 
   const scanLineTranslate = scanLineAnim.interpolate({
@@ -168,7 +171,15 @@ export default function BarcodeScannerModal({
               <TouchableOpacity onPress={onClose} style={styles.headerButton}>
                 <Text style={styles.headerButtonText}>✕</Text>
               </TouchableOpacity>
-              <Text style={styles.headerTitle}>{title}</Text>
+              <View style={styles.headerTitleContainer}>
+                <Text style={styles.headerTitle}>{title}</Text>
+                <TouchableOpacity 
+                  onPress={() => setIsContinuous(!isContinuous)}
+                  style={[styles.modeToggle, isContinuous && styles.modeToggleActive]}
+                >
+                  <Text style={styles.modeToggleText}>{isContinuous ? "Continuous" : "Single Scan"}</Text>
+                </TouchableOpacity>
+              </View>
               <TouchableOpacity
                 onPress={() => setTorch(!torch)}
                 style={[styles.headerButton, torch && styles.headerButtonActive]}
@@ -187,6 +198,29 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#000",
+  },
+  headerTitleContainer: {
+    alignItems: "center",
+  },
+  modeToggle: {
+    backgroundColor: "rgba(255,255,255,0.1)",
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginTop: 4,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+  },
+  modeToggleActive: {
+    backgroundColor: "rgba(99,102,241,0.3)",
+    borderColor: "rgba(99,102,241,0.5)",
+  },
+  modeToggleText: {
+    color: "#fff",
+    fontSize: 10,
+    fontWeight: "bold",
+    textTransform: "uppercase",
+    letterSpacing: 1,
   },
   // Permission styles
   permissionContainer: {
