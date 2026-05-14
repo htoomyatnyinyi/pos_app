@@ -3,10 +3,10 @@ import {
   View,
   Text,
   ScrollView,
-  SafeAreaView,
   ActivityIndicator,
   TouchableOpacity,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useGetOrdersQuery } from "@/services/features/order/orderApi";
 
 export default function OrdersScreen() {

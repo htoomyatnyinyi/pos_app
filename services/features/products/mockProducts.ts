@@ -1,4 +1,4 @@
-export const mockProdcuts = [
+export const mockProducts = [
   {
     id: 1,
     img: "https://via.placeholder.com/150",

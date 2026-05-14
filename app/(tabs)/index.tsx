@@ -1,19 +1,22 @@
 import { useGetCategoriesQuery } from "@/services/features/categories/categoryApi";
-import { mockProdcuts } from "@/services/features/products/mockProducts";
 import { useGetProductsQuery } from "@/services/features/products/productApi";
+import { mockProducts } from "@/services/features/products/mockProducts";
 import { Product } from "@/services/features/products/productTypes";
 import { router } from "expo-router";
 import React, { useEffect, useMemo, useState } from "react";
-import { FaBars, FaCartPlus } from "react-icons/fa";
+import { useAppDispatch } from "@/hooks/redux-hooks/useAppDispatch";
+import { useAppSelector } from "@/hooks/redux-hooks/useAppSelector";
+import { addToCart, removeFromCart } from "@/services/features/cart/cartSlice";
+import { FontAwesome6 } from "@expo/vector-icons";
 import {
   ActivityIndicator,
-  SafeAreaView,
   ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const StockItems = () => {
   // FETCH API DATA
@@ -21,30 +24,51 @@ const StockItems = () => {
 
   // const [isLoading] = useState(false);
   // const [error] = useState(false);
-  const [cartItems, setCartItems] = useState([]);
+  const dispatch = useAppDispatch();
+  const { items: cartItems } = useAppSelector((state) => state.cart);
   const [showSidebar, setShowSidebar] = useState(true);
 
   const [products, setProducts] = useState<Product[]>([]);
   const [cartCount, setCartCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const { data: categoryData = [], isLoading: boolean } =
+  const { data: categoryData = [], isLoading: isCategoriesLoading } =
     useGetCategoriesQuery();
 
-  // SET PRODUCTS FROM API
+  const dynamicCategories = useMemo(() => {
+    // Start with API categories
+    const apiCats = categoryData.map(c => ({ id: c.id, name: c.name }));
+    
+    // Add categories from current products if they don't exist in API cats
+    const productCats = [
+      ...new Set(products.map((p) => p.categoryId)),
+    ].filter(id => !apiCats.some(c => c.id === id))
+     .map(id => ({ id, name: id }));
+     
+    return [...apiCats, ...productCats];
+  }, [categoryData, products]);
+
+  // SET PRODUCTS FROM API WITH MOCK FALLBACK
   useEffect(() => {
-    if (apiProducts) {
+    if (apiProducts && apiProducts.length > 0) {
       setProducts(apiProducts);
+    } else if (!isLoading) {
+      // Fallback to mock data if API is empty or errors out
+      // We map mock data to match the Product interface if needed
+      const mappedMocks: Product[] = mockProducts.map(p => ({
+        id: String(p.id),
+        sku: `SKU-${p.id}`,
+        name: `Product ${p.id}`,
+        costPrice: p.originalPrice,
+        sellingPrice: p.sellingPrice,
+        stockQuantity: p.quantities,
+        categoryId: p.categories,
+        imageUrl: p.img,
+        createdAt: new Date().toISOString()
+      }));
+      setProducts(mappedMocks);
     }
-  }, [apiProducts]);
-  // unique categories
-  const categories = useMemo(() => {
-    const unique = [
-      "All",
-      ...new Set(mockProdcuts.map((item) => item.categories)),
-    ];
-    return unique;
-  }, []);
+  }, [apiProducts, isLoading]);
 
   // effect to set selectedCategory based on search
   useEffect(() => {
@@ -89,87 +113,23 @@ const StockItems = () => {
   });
 
   // add to cart
-  const handleAddToCart = (id: any) => {
-    const selectedProduct = products.find((p) => p.id === id);
-
-    if (!selectedProduct || selectedProduct.stockQuantity <= 0) return;
-
-    // 1. reduce stock
-    setProducts((prev) =>
-      prev.map((product) =>
-        product.id === id
-          ? {
-              ...product,
-              stockQuantity: product.stockQuantity - 1,
-            }
-          : product,
-      ),
-    );
-
-    // 2. update cart items
-    setCartItems((prev: any) => {
-      const existing = prev.find((item: any) => item.id === id);
-
-      if (existing) {
-        return prev.map((item: any) =>
-          item.id === id
-            ? {
-                ...item,
-                qty: item.qty + 1,
-              }
-            : item,
-        );
-      }
-
-      return [
-        ...prev,
-        {
-          ...selectedProduct,
-          qty: 1,
-        },
-      ];
-    });
-
-    // 3. update cart badge
+  const handleAddToCart = (product: Product) => {
+    if (product.stockQuantity <= 0) return;
+    dispatch(addToCart({
+      id: product.id,
+      name: product.name,
+      price: product.sellingPrice,
+      qty: 1,
+      productId: product.id,
+      image: product.imageUrl
+    }));
     setCartCount((prev) => prev + 1);
   };
 
   // remove from cart
-  const handleRemoveFromCart = (id: any) => {
-    const existing = cartItems.find((item: any) => item.id === id);
-
-    if (!existing || existing.qty <= 0) return;
-
-    // 1. increase stock
-    setProducts((prev) =>
-      prev.map((product) =>
-        product.id === id
-          ? {
-              ...product,
-              stockQuantity: product.stockQuantity + 1,
-            }
-          : product,
-      ),
-    );
-
-    // 2. update cart items
-    setCartItems((prev: any) => {
-      const updated = prev
-        .map((item: any) =>
-          item.id === id
-            ? {
-                ...item,
-                qty: item.qty - 1,
-              }
-            : item,
-        )
-        .filter((item: any) => item.qty > 0);
-
-      return updated;
-    });
-
-    // 3. update cart badge
-    setCartCount((prev) => prev - 1);
+  const handleRemoveFromCart = (id: string) => {
+    dispatch(removeFromCart(id));
+    setCartCount((prev) => Math.max(0, prev - 1));
   };
 
   const openAdd = () => {
@@ -199,16 +159,18 @@ const StockItems = () => {
           {/* Sidebar Toggle */}
           <TouchableOpacity
             onPress={() => setShowSidebar(!showSidebar)}
-            className="bg-white border border-slate-200 p-4 rounded-2xl">
-            <FaBars color="#0f172a" />
+            className="bg-white border border-slate-200 p-4 rounded-2xl"
+          >
+            <FontAwesome6 name="bars" size={20} color="#0f172a" />
           </TouchableOpacity>
 
           {/* Cart */}
           <TouchableOpacity
             activeOpacity={0.8}
             onPress={openAdd}
-            className="bg-slate-900 px-5 py-4 rounded-2xl relative">
-            <FaCartPlus color="white" />
+            className="bg-slate-900 px-5 py-4 rounded-2xl relative"
+          >
+            <FontAwesome6 name="cart-plus" size={20} color="white" />
             {cartCount > 0 && (
               <View className="absolute -top-2 -right-2 bg-red-500 w-6 h-6 rounded-full items-center justify-center">
                 <Text className="text-white text-xs font-bold">
@@ -220,16 +182,10 @@ const StockItems = () => {
         </View>
       </View>
 
-      {/* LOADING */}
-      {isLoading ? (
+      {/* LOADING (only show if we have no products yet) */}
+      {isLoading && products.length === 0 ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#0f172a" />
-        </View>
-      ) : error ? (
-        <View className="flex-1 items-center justify-center px-10">
-          <Text className="text-red-500 font-bold text-lg text-center">
-            Error loading inventory.
-          </Text>
         </View>
       ) : (
         <>
@@ -264,19 +220,21 @@ const StockItems = () => {
                       selectedCategory === "All"
                         ? "bg-slate-900"
                         : "bg-slate-100 border border-slate-200"
-                    }`}>
+                    }`}
+                  >
                     <Text
                       className={`font-bold text-center ${
                         selectedCategory === "All"
                           ? "text-white"
                           : "text-slate-700"
-                      }`}>
+                      }`}
+                    >
                       All
                     </Text>
                   </TouchableOpacity>
 
                   {/* REAL CATEGORIES */}
-                  {categoryData.map((category) => {
+                  {dynamicCategories.map((category) => {
                     const active = selectedCategory === category.id;
 
                     return (
@@ -288,11 +246,13 @@ const StockItems = () => {
                           active
                             ? "bg-slate-900"
                             : "bg-slate-100 border border-slate-200"
-                        }`}>
+                        }`}
+                      >
                         <Text
                           className={`font-bold text-center ${
                             active ? "text-white" : "text-slate-700"
-                          }`}>
+                          }`}
+                        >
                           {category.name}
                         </Text>
                       </TouchableOpacity>
@@ -310,20 +270,21 @@ const StockItems = () => {
                 paddingBottom: 120,
                 paddingTop: 10,
               }}
-              className="flex-1">
+              className="flex-1"
+            >
               <View className="flex-row flex-wrap justify-between">
                 {displayedProducts.map((product) => (
-                  <>
+                  <View
+                    key={product.id}
+                    className="w-[48%] rounded-3xl mb-4 p-4 border shadow-sm bg-white border-slate-200 relative"
+                  >
                     {isInCart(product.id) && (
-                      <View className="absolute top-2 right-2 bg-green-500 px-2 py-1 rounded-full">
+                      <View className="absolute top-2 right-2 bg-green-500 px-2 py-1 rounded-full z-10">
                         <Text className="text-white text-xs font-bold">
                           In Cart
                         </Text>
                       </View>
                     )}
-                    <View
-                      key={product.id}
-                      className="w-[48%] rounded-3xl mb-4 p-4 border shadow-sm bg-white border-slate-200">
                       {/* IMAGE */}
                       {/* <Image
                         source={{ uri: product.img }}
@@ -353,16 +314,18 @@ const StockItems = () => {
                           <View className="flex-row gap-2">
                             {isInCart(product.id) && (
                               <TouchableOpacity
-                                onPress={() => handleRemoveFromCart(product.id)}
-                                className="bg-red-500 w-9 h-9 rounded-full items-center justify-center">
-                                <Text className="text-white text-lg font-bold">
-                                  -
-                                </Text>
-                              </TouchableOpacity>
-                            )}
-                            <TouchableOpacity
-                              onPress={() => handleAddToCart(product.id)}
-                              className="bg-slate-900 w-9 h-9 rounded-full items-center justify-center">
+                                  onPress={() => handleRemoveFromCart(product.id)}
+                                  className="bg-red-500 w-9 h-9 rounded-full items-center justify-center"
+                                >
+                                  <Text className="text-white text-lg font-bold">
+                                    -
+                                  </Text>
+                                </TouchableOpacity>
+                              )}
+                              <TouchableOpacity
+                                onPress={() => handleAddToCart(product)}
+                                className="bg-slate-900 w-9 h-9 rounded-full items-center justify-center"
+                              >
                               <Text className="text-white text-lg font-bold">
                                 +
                               </Text>
@@ -371,7 +334,6 @@ const StockItems = () => {
                         </View>
                       </View>
                     </View>
-                  </>
                 ))}
               </View>
             </ScrollView>

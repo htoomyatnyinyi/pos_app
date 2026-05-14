@@ -1,5 +1,13 @@
 import { useState } from "react";
-import { View, TextInput, Text, TouchableOpacity, KeyboardAvoidingView, Platform, SafeAreaView } from "react-native";
+import {
+  View,
+  TextInput,
+  Text,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { useLoginMutation } from "@/services/features/auth/authApi";
 import { useAppDispatch } from "@/hooks/redux-hooks/useAppDispatch";
@@ -9,7 +17,7 @@ export default function LoginScreen() {
   const dispatch = useAppDispatch();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  
+
   const [login, { isLoading }] = useLoginMutation();
 
   const handleLogin = async () => {
@@ -28,19 +36,23 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white">
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
         className="flex-1 justify-center px-8"
       >
         <View className="mb-12">
-          <Text className="text-4xl font-black text-slate-900 tracking-tight mb-2">Welcome Back</Text>
-          <Text className="text-slate-500 font-medium text-base">Sign in to continue to POS.</Text>
+          <Text className="text-4xl font-black text-slate-900 tracking-tight mb-2">
+            Welcome Back
+          </Text>
+          <Text className="text-slate-500 font-medium text-base">
+            Sign in to continue to POS.
+          </Text>
         </View>
-        
+
         <View className="gap-5">
-          <TextInput 
-            placeholder="Email Address" 
-            value={email} 
+          <TextInput
+            placeholder="Email Address"
+            value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
             keyboardType="email-address"
@@ -57,24 +69,27 @@ export default function LoginScreen() {
             className="bg-slate-50 px-6 py-5 rounded-2xl text-slate-900 font-medium text-base"
           />
 
-          <TouchableOpacity 
+          <TouchableOpacity
             activeOpacity={0.8}
             onPress={handleLogin}
             disabled={isLoading}
-            className={`py-5 rounded-2xl items-center mt-6 shadow-sm ${isLoading ? 'bg-slate-200' : 'bg-slate-900'}`}
+            className={`py-5 rounded-2xl items-center mt-6 shadow-sm ${isLoading ? "bg-slate-200" : "bg-slate-900"}`}
           >
-            <Text className={`font-black text-lg ${isLoading ? 'text-slate-400' : 'text-white'}`}>
+            <Text
+              className={`font-black text-lg ${isLoading ? "text-slate-400" : "text-white"}`}
+            >
               {isLoading ? "Logging in..." : "Sign In"}
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             activeOpacity={0.6}
             onPress={() => router.push("/register")}
             className="items-center mt-4 p-2"
           >
             <Text className="text-slate-500 font-medium">
-              Don't have an account? <Text className="text-slate-900 font-bold">Register</Text>
+              Don't have an account?{" "}
+              <Text className="text-slate-900 font-bold">Register</Text>
             </Text>
           </TouchableOpacity>
         </View>

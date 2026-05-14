@@ -108,7 +108,10 @@ export default function InventoryScreen() {
     } catch (err: any) {
       console.error(err);
 
-      Alert.alert("Error", err?.data?.message || "Failed to create category.");
+      Alert.alert(
+        "Error",
+        err?.data?.detail || err?.data?.message || err?.data?.title || "Failed to create category."
+      );
     } finally {
       setIsAddingCategory(false);
     }
@@ -155,7 +158,7 @@ export default function InventoryScreen() {
       console.error(err);
       Alert.alert(
         "Error",
-        err?.data?.message || "Failed to save product. Check if SKU is unique.",
+        err?.data?.detail || err?.data?.message || err?.data?.title || "Failed to save product. Check if SKU is unique."
       );
     }
   };

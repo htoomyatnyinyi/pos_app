@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { View, TextInput, Text, TouchableOpacity, KeyboardAvoidingView, Platform, SafeAreaView } from "react-native";
+import { View, TextInput, Text, TouchableOpacity, KeyboardAvoidingView, Platform } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { useRegisterMutation } from "@/services/features/auth/authApi";
 import { useAppDispatch } from "@/hooks/redux-hooks/useAppDispatch";
